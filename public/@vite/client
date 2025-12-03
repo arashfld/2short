@@ -1,0 +1,3 @@
+// no-op placeholder to satisfy IDE webview requests for Vite HMR
+// Next.js dev server (Turbopack/Webpack) does not serve /@vite/client.
+// Serving an empty file avoids noisy 404 logs during navigation.

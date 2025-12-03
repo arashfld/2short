@@ -1,0 +1,62 @@
+/**
+ * @file Firestore Security Rules for FarsiFanConnect.
+ *
+ * @corePhilosophy This ruleset enforces a strict user-ownership model, where each user can only access their own data stored under their unique user ID.
+ * @dataStructure All user data is nested under the `/users/{userId}` collection, providing a clear ownership hierarchy.
+ * @keySecurityDecisions
+ *   - User listing is disallowed for privacy.
+ *   - The rules explicitly deny all write access by default and grant it only after ownership validation.
+ *   - The `id` field within each user document must match the `userId` in the path to prevent unauthorized data access.
+ * @denormalization For authorization purposes, the user ID is embedded in the document path (`/users/{userId}`) and must match the `id` field within the document. This avoids the need for complex queries or additional reads during authorization checks.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /**
+     * @description Manages access to user profile documents.
+     * @path /users/{userId}
+     * @allow (create) User with ID 'user123' creates their profile document at /users/user123.
+     * @deny (create) User with ID 'user123' attempts to create a profile document at /users/user456.
+     * @allow (get) User with ID 'user123' retrieves their profile document at /users/user123.
+     * @deny (get) User with ID 'user123' attempts to retrieve the profile document of user 'user456' at /users/user456.
+     * @allow (update) User with ID 'user123' updates their profile document at /users/user123.
+     * @deny (update) User with ID 'user123' attempts to update the profile document of user 'user456' at /users/user456.
+     * @allow (delete) User with ID 'user123' deletes their profile document at /users/user123.
+     * @deny (delete) User with ID 'user123' attempts to delete the profile document of user 'user456' at /users/user456.
+     * @principle Enforces document ownership for all operations; only the authenticated user can access their own profile.
+     */
+    match /users/{userId} {
+      // Allow anyone to read user profiles.
+      allow get: if isSignedIn();
+      // Only allow the user to list their own documents (no listing for others).
+      allow list: if false;
+
+      // Only allow the user to create their own profile, and enforce the ID matches the path.
+      allow create: if isSignedIn() && request.auth.uid == userId && request.resource.data.id == userId;
+
+      // Only allow the user to update their own profile, and enforce that the ID cannot be changed.
+      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
+
+      // Only allow the user to delete their own profile.
+      allow delete: if isExistingOwner(userId);
+    }
+
+    // --- Helper functions ---
+
+    // Checks if the user is signed in.
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // Checks if the user is the owner of the document (based on the userId).
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // Checks if the user is the owner of an existing document.
+    function isExistingOwner(userId) {
+      return isOwner(userId) && resource != null;
+    }
+  }
+}

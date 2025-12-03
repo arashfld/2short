@@ -1,0 +1,159 @@
+
+{
+  "entities": {
+    "UserProfile": {
+      "title": "User Profile",
+      "description": "Represents a user's profile information.",
+      "type": "object",
+      "properties": {
+        "fullName": {
+          "type": "string",
+          "description": "The user's full name."
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "The user's email address."
+        },
+        "role": {
+          "type": "string",
+          "description": "The user's role.",
+          "enum": ["fan", "creator"]
+        },
+        "subscriptionTier": {
+          "type": "number",
+          "description": "The subscription tier of the user. 0 for non-subscribers.",
+          "enum": [0, 1, 2, 3]
+        },
+        "imageUrl": {
+            "type": "string",
+            "description": "URL for the user's profile image."
+        },
+        "bio": {
+            "type": "string",
+            "description": "A short biography of the user."
+        },
+        "bannerUrl": {
+            "type": "string",
+            "description": "URL for the user's profile banner."
+        },
+        "tiers": {
+          "type": "object",
+          "description": "Details for each subscription tier offered by a creator.",
+          "properties": {
+            "1": { "$ref": "#/entities/Tier" },
+            "2": { "$ref": "#/entities/Tier" },
+            "3": { "$ref": "#/entities/Tier" }
+          }
+        }
+      },
+      "required": ["fullName", "email", "role", "subscriptionTier"]
+    },
+    "Tier": {
+      "title": "Subscription Tier",
+      "description": "Defines the price and description for a subscription tier.",
+      "type": "object",
+      "properties": {
+        "price": {
+          "type": "number",
+          "description": "The monthly price of the tier."
+        },
+        "description": {
+          "type": "string",
+          "description": "A description of the benefits for this tier."
+        }
+      },
+      "required": ["price", "description"]
+    },
+    "Post": {
+      "title": "Post",
+      "description": "Represents a content post by a creator.",
+      "type": "object",
+      "properties": {
+        "creatorId": {
+          "type": "string",
+          "description": "The UID of the creator who made the post."
+        },
+        "creatorName": {
+            "type": "string",
+            "description": "The name of the creator."
+        },
+        "creatorImageUrl": {
+            "type": "string",
+            "description": "The profile image URL of the creator."
+        },
+        "title": {
+          "type": "string",
+          "description": "The title of the post."
+        },
+        "slug": {
+            "type": "string",
+            "description": "A URL-friendly version of the title."
+        },
+        "content": {
+          "type": "string",
+          "description": "The main content of the post."
+        },
+        "imageUrl": {
+          "type": "string",
+          "description": "The URL for the post's cover image."
+        },
+        "imageHint": {
+          "type": "string",
+          "description": "A hint for AI image generation."
+        },
+        "requiredTier": {
+          "type": "number",
+          "description": "The minimum subscription tier required to view this post.",
+          "enum": [0, 1, 2, 3]
+        },
+        "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "The timestamp when the post was created."
+        }
+      },
+      "required": ["creatorId", "creatorName", "title", "content", "imageUrl", "requiredTier", "createdAt", "slug"]
+    },
+    "Subscription": {
+        "title": "Subscription",
+        "description": "Represents a fan's subscription to a creator.",
+        "type": "object",
+        "properties": {
+            "creatorId": {
+                "type": "string",
+                "description": "The UID of the creator being subscribed to."
+            },
+            "subscribedAt": {
+                "type": "string",
+                "format": "date-time",
+                "description": "The timestamp when the subscription was made."
+            }
+        },
+        "required": ["creatorId", "subscribedAt"]
+    }
+  },
+  "auth": {
+    "providers": ["password"]
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": {
+        "$ref": "#/entities/UserProfile"
+      },
+      "description": "Stores public user profile information."
+    },
+    "/posts/{postId}": {
+      "schema": {
+        "$ref": "#/entities/Post"
+      },
+      "description": "Stores individual content posts made by creators."
+    },
+    "/users/{userId}/subscriptions/{creatorId}": {
+        "schema": {
+            "$ref": "#/entities/Subscription"
+        },
+        "description": "Stores the record of a fan's subscription to a creator."
+    }
+  }
+}
